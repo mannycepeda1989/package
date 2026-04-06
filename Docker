@@ -1,0 +1,23 @@
+FROM 234858372212.dkr.ecr.us-east-1.amazonaws.com/basemap-common:basemap-maps-snapshotter-1.4.0  AS runtime
+
+ENV DEBIAN_FRONTEND="noninteractive" TZ="Europe/London"
+ENV TMPDIR=/tmp
+ENV DISPLAY=:99
+ENV LD_PRELOAD=/usr/lib/swiftshader/libGLESv2.so:/usr/lib/swiftshader/libEGL.so
+
+WORKDIR /src/landmark-icons
+COPY ./package* ./
+
+COPY . .
+
+ARG NPMAccessToken
+RUN echo "//registry.npmjs.org/:_authToken=${NPMAccessToken}" > ~/.npmrc
+RUN npm ci --silent --no-fund --no-audit --only=production
+
+RUN apt-get purge -y libc6-dbg binutils build-essential && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm -rf ~/.cache && \
+    rm -rf ~/.npm && \
+    rm -f ./.npmrc
